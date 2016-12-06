@@ -95,64 +95,172 @@ int read_n_byte_integer(int n)
  * Machine operations.
  */
 
-void do_push(int n)
-{
-/* TODO */
+void do_push(int n) {
+    /* Check that there is space in the stack*/
+    if(vm.sp > 255) {
+        fprintf(stderr, "Stack full, cannot push");
+        exit(0);
+    }
+    /* make top of stack n and increment stack pointer. */
+    vm.stack[vm.sp] = n;
+    vm.sp ++;
+    printf("%d pushed to stack\n", n);
 }
 
-void do_pop(void)
-{
-/* TODO */
+void do_pop(void) {
+    /* Check that the stack has something to pop. */
+    if(vm.sp < 1) {
+        fprintf(stderr, "Stack empty, cannot pop.");
+        exit(0);
+    }
+
+    /* Pop from stack */
+    vm.sp --;
+    printf("pop\n");
 }
 
-void do_load(int n)
-{
-/* TODO */
+void do_load(int n) {
+    /* Check that an value can be added to the stack. */
+    if(vm.sp > 255) {
+        fprintf(stderr, "Stack ful, cannot load.");
+        exit(0);
+    }
+
+    /* load value. */
+    vm.stack[vm.sp] = vm.reg[n];
+    vm.sp ++;
+    printf("%d loaded to stack.\n", vm.reg[n]);
 }
 
-void do_store(int n)
-{
-/* TODO */
+void do_store(int n) {
+    /* make sure there is at least one value in the stack. */
+    if(vm.sp < 1) {
+        fprintf(stderr, "Stack empty, cannot store.");
+        exit(0);
+    }
+
+    /* store and pop */
+    vm.reg[n] = vm.stack[vm.sp];
+    do_pop();
+    printf("%d stored.\n", vm.reg[n]);
 }
 
-void do_jmp(int n)
-{
-/* TODO */
+void do_jmp(int n) {
+    /* make sure n is a valid instruction. */
+    if(n > MAX_INSTS) {
+        fprintf(stderr, "Invalid instruction, cannot jump.");
+        exit(0);
+    }
+
+    /* Jump */
+    vm.ip = n;
+    printf(" Jump to %d\n", n);
 }
 
-void do_jz(int n)
-{
-/* TODO */
+void do_jz(int n) {
+    /* Check if TOS is zero. */
+    if(vm.stack[vm.sp] == 0) {
+        do_pop();
+        do_jmp(n);
+    } else { /* just pop if TOS isn't zero. */
+        do_pop();
+    }
 }
 
-void do_jnz(int n)
-{
-/* TODO */
+void do_jnz(int n) {
+    /* Check if TOS is zero. */
+    if(vm.stack[vm.sp] == 0) {
+        do_pop();
+    } else { /* when not zero */
+        do_pop();
+        do_jmp(n);
+    }
 }
 
-void do_add(void)
-{
-/* TODO */
+void do_add(void) {
+    int s1;
+    int s2;
+
+    /* check that there are two elements to pop. */
+    if(vm.sp < 2) {
+        fprintf(stderr, "There are not two elements in the stack, cannot add.");
+        exit(0);
+    }
+
+    /* valid, now to the adding. */
+    s1 = vm.stack[vm.sp];
+    s2 = vm.stack[vm.sp - 1];
+    do_pop();
+    do_pop();
+    do_push(s1 + s2);
 }
 
-void do_sub(void)
-{
-/* TODO */
+void do_sub(void) {
+    int s1;
+    int s2;
+
+    /* check that there are two elements to pop. */
+    if(vm.sp < 2) {
+        fprintf(stderr, "There are not two elements in the stack, cannot subtraction.");
+        exit(0);
+    }
+
+    /* valid, now to the adding. */
+    s1 = vm.stack[vm.sp];
+    s2 = vm.stack[vm.sp - 1];
+    do_pop();
+    do_pop();
+    do_push(s2 - s1);
+
 }
 
-void do_mul(void)
-{
-/* TODO */
+void do_mul(void) {
+    int s1;
+    int s2;
+        
+    /* check that there are two elements to pop. */
+    if(vm.sp < 2) {
+        fprintf(stderr, "There are not two elements in the stack, cannot multiply.");
+        exit(0);
+    }
+            
+    /* valid, now to the adding. */
+    s1 = vm.stack[vm.sp];
+    s2 = vm.stack[vm.sp - 1];
+    do_pop();
+    do_pop();
+    do_push(s1 * s2);
 }
 
-void do_div(void)
-{
-/* TODO */
+void do_div(void) {
+    int s1;
+    int s2;
+            
+    /* check that there are two elements to pop. */
+    if(vm.sp < 2) {
+        fprintf(stderr, "There are not two elements in the stack, cannot add.");
+        exit(0);
+    }
+
+    /* valid, now to the adding. */
+    s1 = vm.stack[vm.sp];
+    s2 = vm.stack[vm.sp - 1];
+    do_pop();
+    do_pop();
+    do_push(s2 / s1);
 }
 
-void do_print(void)
-{
-/* TODO */
+void do_print(void) {
+    int n;
+    /* Check there is a number to print. */
+    if(vm.sp < 0){
+        fprintf(stderr, "There is no number on the stack, cannot print.");
+        exit(0);
+    }
+    
+    n = vm.stack[vm.sp];
+    fprintf(stdout, "%d\n", n );
+    do_pop();
 }
 
 
@@ -215,7 +323,9 @@ void execute_program(void)
             break;
 
         case POP:
-            /* TODO */
+            vm.ip++;
+            do_pop();
+            break;
 
         case LOAD:
             vm.ip++;
@@ -226,7 +336,12 @@ void execute_program(void)
             break;
 
         case STORE:
-            /* TODO */
+            vm.ip++;
+
+            /* Read in the next byte. */
+            val = read_n_byte_integer(1);
+            do_store(val);
+            break;
 
         case JMP:
             vm.ip++;
@@ -237,25 +352,47 @@ void execute_program(void)
             break;
 
         case JZ:
-            /* TODO */
+            vm.ip++;
+
+            /* Read in the next two bytes. */
+            val = read_n_byte_integer(2);
+            do_jz(val);
+            break;
+
 
         case JNZ:
-            /* TODO */
+            vm.ip++;
+
+            /* Read in the next two bytes. */
+            val = read_n_byte_integer(2);
+            do_jnz(val);
+            break;
+
 
         case ADD:
-            /* TODO */
+            vm.ip++;
+            do_add();
+            break;
 
         case SUB:
-            /* TODO */
+            vm.ip++;
+            do_sub();
+            break;
 
         case MUL:
-            /* TODO */
+            vm.ip++;
+            do_mul();
+            break;
 
         case DIV:
-            /* TODO */
+            vm.ip++;
+            do_div();
+            break;
 
         case PRINT:
-            /* TODO */
+            vm.ip++;
+            do_print();
+            break;
 
         case STOP:
             return;
